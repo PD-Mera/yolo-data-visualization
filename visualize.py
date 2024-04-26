@@ -1,0 +1,71 @@
+import random
+import os
+import argparse
+import glob
+
+import cv2
+
+from helpers import generate_color
+    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Visualize data in YOLO format')
+    parser.add_argument('--datadir', default='./data/images', type=str, help='Path to images directory')
+    parser.add_argument('--classes', default='./classes.txt', type=str, help='Path to classes.txt')
+    # parser.add_argument('--classes_exclude', nargs='+', type=str, help='List of classes not visualize')
+    parser.add_argument('--savename', default='./synthesis', type=str, help='Path to save synthesis images directory')
+    parser.add_argument('--number', default=1, type=int, help='Number of visualized labels')
+    parser.add_argument('--random', action='store_true', help='Visualize random labels')
+
+    args = parser.parse_args()
+
+    with open(args.classes, "r") as f:
+        list_classname = f.read().rstrip("\n").split("\n")
+
+    class_color_dict = {}
+    for class_idx, classname in enumerate(list_classname):
+        class_color_dict[class_idx] = {"classname": classname, "color": generate_color()} 
+
+    print(class_color_dict)
+
+    list_image_path = glob.glob(f"{args.datadir}/*")
+    assert len(list_image_path) > 0
+    if args.random: random.shuffle(list_image_path)
+    if args.number > 0: list_image_path = list_image_path[:args.number]
+
+    os.makedirs(args.savename, exist_ok=True)
+
+    for image_path in list_image_path:
+        image = cv2.imread(image_path)
+        img_h, img_w, _ = image.shape
+        image_ext = image_path.split(".")[-1]
+        label_path = image_path.replace("/images/", "/labels/").replace(image_ext, "txt")
+        with open(label_path, "r") as f:
+            list_label = f.read().rstrip("\n").split("\n")
+        
+        for label in list_label:
+            label_component = label.split(" ")
+            class_idx = int(label_component[0])
+            classname = class_color_dict[class_idx]["classname"]
+            color = class_color_dict[class_idx]["color"]
+            bbox_x_center = float(label_component[1]) * img_w
+            bbox_y_center = float(label_component[2]) * img_h
+            bbox_w = float(label_component[3]) * img_w
+            bbox_h = float(label_component[4]) * img_h
+
+            bbox_x1 = int(bbox_x_center - bbox_w / 2.0)
+            bbox_y1 = int(bbox_y_center - bbox_h / 2.0)
+            bbox_x2 = int(bbox_x_center + bbox_w / 2.0)
+            bbox_y2 = int(bbox_y_center + bbox_h / 2.0)
+
+            thickness = 2
+
+            cv2.rectangle(image, (bbox_x1, bbox_y1), (bbox_x2, bbox_y2), color, thickness)
+
+            cv2.putText(image, classname, (bbox_x1, bbox_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    
+        cv2.imwrite(os.path.join(args.savename, image_path.split("/")[-1]), image)
+            
+
+
+
+
