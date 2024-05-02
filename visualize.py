@@ -2,6 +2,7 @@ import random
 import os
 import argparse
 import glob
+import json
 
 import cv2
 
@@ -10,7 +11,7 @@ from helpers import generate_color
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visualize data in YOLO format')
     parser.add_argument('--datadir', default='./data/images', type=str, help='Path to images directory')
-    parser.add_argument('--classes', default='./classes.txt', type=str, help='Path to classes.txt')
+    parser.add_argument('--classes', default='./classes.txt', type=str, help='Path to classes.txt or class_mapping.json')
     # parser.add_argument('--classes_exclude', nargs='+', type=str, help='List of classes not visualize')
     parser.add_argument('--savename', default='./synthesis', type=str, help='Path to save synthesis images directory')
     parser.add_argument('--number', default=1, type=int, help='Number of visualized labels')
@@ -18,8 +19,22 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    with open(args.classes, "r") as f:
-        list_classname = f.read().rstrip("\n").split("\n")
+    if args.classes.endswith(".txt"):
+        with open(args.classes, "r") as f:
+            list_classname = f.read().rstrip("\n").split("\n")
+    elif args.classes.endswith(".json"):
+        with open(args.classes, 'r') as f:
+            class_mapping_dict = json.load(f)
+        
+        swap_dict = {}
+        for key in class_mapping_dict.keys():
+            swap_dict[class_mapping_dict[key]] = key
+
+        list_classname = []
+        for i in range(len(swap_dict.keys())):
+            list_classname.append(swap_dict[i])
+    else:
+        raise NotImplementedError
 
     class_color_dict = {}
     for class_idx, classname in enumerate(list_classname):
