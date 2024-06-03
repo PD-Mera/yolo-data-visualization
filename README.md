@@ -15,6 +15,12 @@ python visualize.py --datadir ./data/images/ --classes classes.txt --savename ou
 python count_labels.py --label_dirs /path/to/a/labels /path/to/b/labels --classes /path/to/classes.txt
 ```
 
+### Remap labels
+
+``` bash
+python remap_labels.py --label_dirs /path/to/a/labels /path/to/b/labels --old_classes /path/to/old_classes.txt --new_classes /path/to/new_classes.txt
+```
+
 ## Demo
 
 | In | Out |
